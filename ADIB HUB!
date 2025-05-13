@@ -1,0 +1,95 @@
+-- ADIB HUB v1.0 (toggle ON/OFF sans couleur flashy)
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
+local aiming = false
+local target = nil
+
+-- GUI
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "ADIB_HUB_UI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 210, 0, 90)
+frame.Position = UDim2.new(0.5, -105, 0.1, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Active = true
+frame.Draggable = true
+frame.AnchorPoint = Vector2.new(0.5, 0)
+
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 6)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0.4, 0)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.Text = "ADIB HUB v1.0"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamSemibold
+title.TextSize = 18
+
+-- Toggle button (style neutre)
+local toggleBtn = Instance.new("TextButton", frame)
+toggleBtn.Size = UDim2.new(0.9, 0, 0.4, 0)
+toggleBtn.Position = UDim2.new(0.05, 0, 0.5, 0)
+toggleBtn.Text = "ON / تشغيل"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Font = Enum.Font.Gotham
+toggleBtn.TextSize = 16
+
+local btnCorner = Instance.new("UICorner", toggleBtn)
+btnCorner.CornerRadius = UDim.new(0, 8)
+
+-- Trouver joueur en vue
+local function getPlayerInView()
+    local closest = nil
+    local smallestAngle = math.huge
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPos = player.Character.HumanoidRootPart.Position
+            local screenPos, onScreen = Camera:WorldToViewportPoint(rootPos)
+            if onScreen then
+                local dir = (rootPos - Camera.CFrame.Position).Unit
+                local angle = math.acos(Camera.CFrame.LookVector:Dot(dir))
+                if angle < smallestAngle then
+                    smallestAngle = angle
+                    closest = player
+                end
+            end
+        end
+    end
+
+    return closest
+end
+
+-- Toggle logique
+toggleBtn.MouseButton1Click:Connect(function()
+    if not aiming then
+        local targetPlayer = getPlayerInView()
+        if targetPlayer then
+            target = targetPlayer
+            aiming = true
+            toggleBtn.Text = "OFF / إيقاف"
+        end
+    else
+        aiming = false
+        target = nil
+        toggleBtn.Text = "ON / تشغيل"
+    end
+end)
+
+-- Aimbot (suivi du corps)
+RunService.RenderStepped:Connect(function()
+    if aiming and target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local pos = target.Character.HumanoidRootPart.Position
+        local camPos = Camera.CFrame.Position
+        Camera.CFrame = CFrame.new(camPos, pos)
+    end
+end)
